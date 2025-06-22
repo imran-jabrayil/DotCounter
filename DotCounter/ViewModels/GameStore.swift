@@ -41,6 +41,9 @@ class GameStore: ObservableObject {
         if let data = try? JSONEncoder().encode(games) {
             store.set(data, forKey: key)
             store.synchronize()
+            print("Saving battles to iCloud: \(games)")
+        } else {
+            print("Couldn't save battles to iCloud: \(games)")
         }
     }
     

@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct GameView: View {
-    let game: Game
+    @Binding var game: Game
     
     var body: some View {
         VStack {
@@ -22,6 +22,6 @@ struct GameView: View {
 }
 
 #Preview {
-    var game = Game(team1: "Team 1", team2: "Team 2")
+    let game = Game(team1: "Team 1", team2: "Team 2")
     GameView(game: game)
 }
