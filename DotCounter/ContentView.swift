@@ -10,7 +10,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var gameStore: GameStore = GameStore()
     @State private var showNewGameSheet: Bool = false
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -20,10 +20,15 @@ struct ContentView: View {
                         GameView(scoreBinding: binding, team1Name: game.team1, team2Name: game.team2)
                     }
                 }
-                .onDelete(perform: gameStore.removeGame)
+                .onDelete { indexSet in
+                    for index in indexSet {
+                        let game = gameStore.games[index]
+                        gameStore.removeGame(game)
+                    }
+                }
             }
             .refreshable {
-                gameStore.syncFromCloud()
+                gameStore.fetchGames()
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }
             .navigationTitle("Games")
@@ -42,9 +47,12 @@ struct ContentView: View {
             .sheet(isPresented: $showNewGameSheet) {
                 NewGameView { team1, team2 in
                     let newGame = Game(team1: team1, team2: team2)
-                    gameStore.addGame(game: newGame)
+                    gameStore.addGame(newGame)
                 }
             }
+        }
+        .onAppear {
+            gameStore.fetchGames()
         }
     }
 }

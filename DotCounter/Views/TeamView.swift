@@ -9,23 +9,17 @@ import SwiftUI
 
 struct TeamView: View {
     let team: String
-    @Binding var score: Int
-    @State private var history: [Int] = []
+    let isTeam1: Bool
+    @ObservedObject var scoreBinding: ScoreBinding
+
     private let points: [Int] = [5, 10, 15, 20, 25, 30, 35]
 
-    @State private var lastActionTime: Date = .distantPast
-    private let throttleInterval: TimeInterval = 0.5
-    
-    @State private var isThrottlingActive: Bool = false
-
-    init(team: String, score: Binding<Int>) {
-        self.team = team
-        self._score = score
+    var score: Int {
+        isTeam1 ? scoreBinding.score1 : scoreBinding.score2
     }
 
     var lastAdded: Int? {
-        guard let last = history.last else { return nil }
-        return last
+        isTeam1 ? scoreBinding.lastAdded1 : scoreBinding.lastAdded2
     }
 
     var body: some View {
@@ -45,48 +39,33 @@ struct TeamView: View {
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 70))], spacing: 12) {
                 ForEach(points, id: \.self) { value in
                     Button("+\(value)") {
-                        let now = Date()
-                        if now.timeIntervalSince(lastActionTime) > throttleInterval {
-                            history.append(value)
-                            score += value
-                            lastActionTime = now
-                            
-                            isThrottlingActive = true
-                            DispatchQueue.main.asyncAfter(deadline: .now() + throttleInterval) {
-                                self.isThrottlingActive = false
-                            }
+                        if isTeam1 {
+                            scoreBinding.add(toTeam1: value)
+                        } else {
+                            scoreBinding.add(toTeam2: value)
                         }
                     }
                     .padding()
                     .frame(minWidth: 70)
-                    .background(isThrottlingActive ? Color.gray : Color.blue)
+                    .background(Color.blue)
                     .foregroundStyle(.white)
                     .cornerRadius(8)
-                    .disabled(isThrottlingActive)
                 }
 
                 Button(action: {
-                    let now = Date()
-                    if now.timeIntervalSince(lastActionTime) > throttleInterval {
-                        if let last = history.popLast() {
-                            score -= last
-                        }
-                        lastActionTime = now
-                        
-                        isThrottlingActive = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + throttleInterval) {
-                            self.isThrottlingActive = false
-                        }
+                    if isTeam1 {
+                        scoreBinding.undoTeam1()
+                    } else {
+                        scoreBinding.undoTeam2()
                     }
                 }) {
                     Image(systemName: "arrow.uturn.backward")
                         .padding()
                         .frame(minWidth: 70)
-                        .background(isThrottlingActive ? Color.gray : Color.red)
+                        .background(Color.red)
                         .foregroundStyle(.white)
                         .cornerRadius(8)
                 }
-                .disabled(isThrottlingActive)
             }
             .padding(.horizontal)
         }
@@ -105,6 +84,9 @@ struct TeamView: View {
 }
 
 #Preview {
-    @Previewable @State var score = 25
-    TeamView(team: "Preview Team", score: $score)
+    let game = Game(team1: "Team A", team2: "Team B", score1: 10, score2: 20)
+    let store = GameStore()
+    let binding = ScoreBinding(game: game, store: store)
+
+    TeamView(team: "Team A", isTeam1: true, scoreBinding: binding)
 }
