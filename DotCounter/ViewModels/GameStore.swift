@@ -37,6 +37,13 @@ class GameStore: ObservableObject {
         saveGames()
     }
     
+    func syncFromCloud() {
+        store.synchronize()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            self.loadGames()
+        }
+    }
+    
     func updateScore(for gameID: UUID, score1: Int, score2: Int) {
         guard let index = games.firstIndex(where: { $0.id == gameID }) else { return }
         games[index].score1 = score1

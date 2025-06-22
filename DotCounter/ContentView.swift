@@ -22,6 +22,10 @@ struct ContentView: View {
                 }
                 .onDelete(perform: gameStore.removeGame)
             }
+            .refreshable {
+                gameStore.syncFromCloud()
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }
             .navigationTitle("Games")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
