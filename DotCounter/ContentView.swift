@@ -8,10 +8,38 @@
 import SwiftUI
 
 struct ContentView: View {
+    @StateObject private var gameStore: GameStore = GameStore()
+    @State private var showNewGameSheet: Bool = false
+    
     var body: some View {
-        VStack {
-            TeamView(team: "Team 1")
-            TeamView(team: "Team 2")
+        NavigationStack {
+            List {
+                ForEach(gameStore.games) { game in
+                    NavigationLink("\(game.team1) vs \(game.team2)") {
+                        GameView(game: game)
+                    }
+                }
+                .onDelete(perform: gameStore.removeGame)
+            }
+            .navigationTitle("Games")
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    EditButton()
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button {
+                        showNewGameSheet = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                }
+            }
+            .sheet(isPresented: $showNewGameSheet) {
+                NewGameView { team1, team2 in
+                    let newGame = Game(team1: team1, team2: team2)
+                    gameStore.addGame(game: newGame)
+                }
+            }
         }
     }
 }
