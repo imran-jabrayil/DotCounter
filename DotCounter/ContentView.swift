@@ -16,7 +16,8 @@ struct ContentView: View {
             List {
                 ForEach(gameStore.games) { game in
                     NavigationLink("\(game.team1) vs \(game.team2)") {
-                        GameView(game: game)
+                        let binding = ScoreBinding(game: game, store: gameStore)
+                        GameView(scoreBinding: binding, team1Name: game.team1, team2Name: game.team2)
                     }
                 }
                 .onDelete(perform: gameStore.removeGame)

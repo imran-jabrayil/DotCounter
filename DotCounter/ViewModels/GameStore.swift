@@ -37,13 +37,17 @@ class GameStore: ObservableObject {
         saveGames()
     }
     
+    func updateScore(for gameID: UUID, score1: Int, score2: Int) {
+        guard let index = games.firstIndex(where: { $0.id == gameID }) else { return }
+        games[index].score1 = score1
+        games[index].score2 = score2
+        saveGames()
+    }
+    
     private func saveGames() {
         if let data = try? JSONEncoder().encode(games) {
             store.set(data, forKey: key)
             store.synchronize()
-            print("Saving battles to iCloud: \(games)")
-        } else {
-            print("Couldn't save battles to iCloud: \(games)")
         }
     }
     

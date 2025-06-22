@@ -9,49 +9,84 @@ import SwiftUI
 
 struct TeamView: View {
     let team: String
-    @StateObject private var scoreHistory: ScoreHistory = ScoreHistory()
-    private var points: [Int] = [5, 10, 15, 20, 25, 30, 35]
+    @Binding var score: Int
+    @State private var history: [Int] = []
+    private let points: [Int] = [5, 10, 15, 20, 25, 30, 35]
+
+    @State private var lastActionTime: Date = .distantPast
+    private let throttleInterval: TimeInterval = 0.5
     
-    init(team: String) {
+    @State private var isThrottlingActive: Bool = false
+
+    init(team: String, score: Binding<Int>) {
         self.team = team
+        self._score = score
     }
-    
+
+    var lastAdded: Int? {
+        guard let last = history.last else { return nil }
+        return last
+    }
+
     var body: some View {
         VStack(spacing: 20) {
             HStack {
                 Text("\(team):")
-                Text("\(scoreHistory.score)")
+                Text("\(score)")
                     .font(.headline)
-                if (scoreHistory.lastAction != nil) {
-                    Text("(+\(scoreHistory.lastAction!))")
+                if let last = lastAdded {
+                    Text("(+\(last))")
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
             }
             .padding(.horizontal)
-            
+
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 70))], spacing: 12) {
-                ForEach(points, id: \.self) { score in
-                    Button("+\(score)") {
-                        scoreHistory.addScore(score)
+                ForEach(points, id: \.self) { value in
+                    Button("+\(value)") {
+                        let now = Date()
+                        if now.timeIntervalSince(lastActionTime) > throttleInterval {
+                            history.append(value)
+                            score += value
+                            lastActionTime = now
+                            
+                            isThrottlingActive = true
+                            DispatchQueue.main.asyncAfter(deadline: .now() + throttleInterval) {
+                                self.isThrottlingActive = false
+                            }
+                        }
                     }
                     .padding()
                     .frame(minWidth: 70)
-                    .background(Color.blue)
+                    .background(isThrottlingActive ? Color.gray : Color.blue)
                     .foregroundStyle(.white)
                     .cornerRadius(8)
+                    .disabled(isThrottlingActive)
                 }
-                
+
                 Button(action: {
-                    scoreHistory.undoLast()
+                    let now = Date()
+                    if now.timeIntervalSince(lastActionTime) > throttleInterval {
+                        if let last = history.popLast() {
+                            score -= last
+                        }
+                        lastActionTime = now
+                        
+                        isThrottlingActive = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + throttleInterval) {
+                            self.isThrottlingActive = false
+                        }
+                    }
                 }) {
                     Image(systemName: "arrow.uturn.backward")
                         .padding()
                         .frame(minWidth: 70)
-                        .background(Color.red)
+                        .background(isThrottlingActive ? Color.gray : Color.red)
                         .foregroundStyle(.white)
                         .cornerRadius(8)
                 }
+                .disabled(isThrottlingActive)
             }
             .padding(.horizontal)
         }
@@ -70,5 +105,6 @@ struct TeamView: View {
 }
 
 #Preview {
-    TeamView(team: "Default Team Name")
+    @Previewable @State var score = 25
+    TeamView(team: "Preview Team", score: $score)
 }

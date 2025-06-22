@@ -8,13 +8,15 @@
 import SwiftUI
 
 struct GameView: View {
-    @Binding var game: Game
-    
+    @ObservedObject var scoreBinding: ScoreBinding
+    let team1Name: String
+    let team2Name: String
+
     var body: some View {
         VStack {
-            TeamView(team: game.team1)
+            TeamView(team: team1Name, score: $scoreBinding.score1)
             Divider().padding(.vertical)
-            TeamView(team: game.team2)
+            TeamView(team: team2Name, score: $scoreBinding.score2)
         }
         .navigationTitle("Game")
         .navigationBarTitleDisplayMode(.inline)
@@ -22,6 +24,12 @@ struct GameView: View {
 }
 
 #Preview {
-    let game = Game(team1: "Team 1", team2: "Team 2")
-    GameView(game: game)
+    let store = GameStore()
+    let game = Game(team1: "Team 1", team2: "Team 2", score1: 10, score2: 20)
+    store.addGame(game: game)
+    let scoreBinding = ScoreBinding(game: game, store: store)
+    
+    return NavigationStack {
+        GameView(scoreBinding: scoreBinding, team1Name: game.team1, team2Name: game.team2)
+    }
 }
