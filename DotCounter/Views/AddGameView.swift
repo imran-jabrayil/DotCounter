@@ -20,12 +20,6 @@ struct AddGameView: View {
                     TextField("Team 1 Name", text: $team1Name)
                     TextField("Team 2 Name", text: $team2Name)
                 }
-                
-                Button("Create Game") {
-                    store.addGame(team1Name: team1Name, team2Name: team2Name)
-                    dismiss()
-                }
-                .disabled(team1Name == "" || team2Name == "")
             }
             .navigationTitle("New Game")
             .toolbar {
@@ -33,6 +27,14 @@ struct AddGameView: View {
                     Button("Cancel") {
                         dismiss()
                     }
+                }
+                
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Create Game") {
+                        store.addGame(team1Name: team1Name, team2Name: team2Name)
+                        dismiss()
+                    }
+                    .disabled(team1Name == "" || team2Name == "")
                 }
             }
         }
