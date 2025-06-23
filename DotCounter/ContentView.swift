@@ -8,55 +8,42 @@
 import SwiftUI
 
 struct ContentView: View {
-    @StateObject private var gameStore: GameStore = GameStore()
-    @State private var showNewGameSheet: Bool = false
+    @StateObject private var store = GameStore()
+    @State private var showingAddGameView = false
 
     var body: some View {
-        NavigationStack {
+        NavigationView {
             List {
-                ForEach(gameStore.games) { game in
-                    NavigationLink("\(game.team1) vs \(game.team2)") {
-                        let binding = ScoreBinding(game: game, store: gameStore)
-                        GameView(scoreBinding: binding, team1Name: game.team1, team2Name: game.team2)
+                ForEach(store.sortedGames) { game in
+                    NavigationLink(destination: GameDetailView(game: game)) {
+                        GameRowView(game: game)
                     }
                 }
-                .onDelete { indexSet in
-                    for index in indexSet {
-                        let game = gameStore.games[index]
-                        gameStore.removeGame(game)
-                    }
-                }
+                .onDelete(perform: store.delete)
             }
-            .refreshable {
-                gameStore.fetchGames()
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            }
+            .listStyle(.insetGrouped)
             .navigationTitle("Games")
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     EditButton()
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showNewGameSheet = true
-                    } label: {
+                    Button(action: {
+                        showingAddGameView = true
+                    }) {
                         Image(systemName: "plus")
                     }
                 }
             }
-            .sheet(isPresented: $showNewGameSheet) {
-                NewGameView { team1, team2 in
-                    let newGame = Game(team1: team1, team2: team2)
-                    gameStore.addGame(newGame)
-                }
+            .sheet(isPresented: $showingAddGameView) {
+                AddGameView(store: store)
             }
         }
-        .onAppear {
-            gameStore.fetchGames()
-        }
+        .preferredColorScheme(.dark)
     }
 }
 
-#Preview {
+
+#Preview("ContentView Preview") {
     ContentView()
 }
