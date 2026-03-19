@@ -4,6 +4,9 @@
 //
 //  Created by Imran Jabrayilov on 01.03.26.
 //
+//  Note: This file is no longer used as the main view.
+//  GameListView is now the entry point of the app.
+//
 
 import SwiftUI
 

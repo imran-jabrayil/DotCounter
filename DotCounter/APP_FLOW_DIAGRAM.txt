@@ -1,0 +1,377 @@
+//
+//  APP_FLOW_DIAGRAM.txt
+//  DotCounter
+//
+//  Created by Imran Jabrayilov on 01.03.26.
+//
+
+# DotCounter App Flow & Architecture
+
+## App Navigation Flow
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     DotCounterApp                            │
+│                   (App Entry Point)                          │
+│                                                              │
+│  • Configures SwiftData ModelContainer                      │
+│  • Sets up iCloud sync (.cloudKitDatabase = .automatic)     │
+│  • Injects modelContainer into environment                  │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    GameListView                              │
+│                   (Main Screen)                              │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  Navigation Bar                                   │      │
+│  │  [Edit]              Domino Games          [+]   │      │
+│  └──────────────────────────────────────────────────┘      │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  📋 Game 1                        🟢 Active       │      │
+│  │  Alice & Bob vs Charlie & David                  │      │
+│  │  15 points           vs           20 points      │      │
+│  │  Mar 1, 2026 10:30 AM                           │      │
+│  └──────────────────────────────────────────────────┘      │
+│                                                              │
+│  ┌──────────────────────────────────────────────────┐      │
+│  │  📋 Game 2                      ⚫ Completed      │      │
+│  │  John vs Jane                                     │      │
+│  │  35 points           vs           25 points      │      │
+│  │  🏆 Winner: John                                  │      │
+│  │  Feb 28, 2026 2:15 PM                           │      │
+│  └──────────────────────────────────────────────────┘      │
+│                                                              │
+│  Actions:                                                    │
+│  • Tap game → Navigate to GameDetailView                    │
+│  • Tap [+] → Show CreateGameView sheet                      │
+│  • Swipe left → Delete game                                 │
+│  • Tap [Edit] → Multi-select delete mode                    │
+└────────────┬──────────────────────────┬─────────────────────┘
+             │                          │
+             │ Tap [+]                  │ Tap Game
+             ▼                          ▼
+┌──────────────────────────┐  ┌──────────────────────────────┐
+│   CreateGameView         │  │     GameDetailView           │
+│   (Modal Sheet)          │  │   (Scoring Screen)           │
+│                          │  │                              │
+│  ┌────────────────────┐  │  │  ┌────────────────────────┐ │
+│  │  Game Mode         │  │  │  │  [Cancel] Score [End] │ │
+│  │  [1v1] [2v2]       │  │  │  └────────────────────────┘ │
+│  └────────────────────┘  │  │                              │
+│                          │  │  ┌────────────────────────┐ │
+│  ┌────────────────────┐  │  │  │ 2v2          🟢 Active │ │
+│  │  Team 1            │  │  │  └────────────────────────┘ │
+│  │  Player 1: [____]  │  │  │                              │
+│  │  Player 2: [____]  │  │  │    Alice & Bob    VS   Charlie│
+│  └────────────────────┘  │  │        15                25   │
+│                          │  │                              │
+│  ┌────────────────────┐  │  │  ┌────────────────────────┐ │
+│  │  Team 2            │  │  │  │   Team 1: Alice & Bob  │ │
+│  │  Player 1: [____]  │  │  │  │   Current Score: 15    │ │
+│  │  Player 2: [____]  │  │  │  │                        │ │
+│  └────────────────────┘  │  │  │   Add Points:          │ │
+│                          │  │  │   [+5] [+10] [+15]     │ │
+│  [Cancel]    [Create]    │  │  │   [+20] [+25] [+30]    │ │
+└──────────────────────────┘  │  │   [+35 (Win)]          │ │
+                              │  │                        │ │
+                              │  │   [⟲ Undo Last Score]  │ │
+                              │  │                        │ │
+                              │  │   History: 0→5→10→15   │ │
+                              │  └────────────────────────┘ │
+                              │                              │
+                              │  ┌────────────────────────┐ │
+                              │  │   Team 2: Charlie & D  │ │
+                              │  │   Current Score: 25    │ │
+                              │  │   (Same layout)        │ │
+                              │  └────────────────────────┘ │
+                              └──────────────────────────────┘
+```
+
+## Data Model Relationships
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      GameSession                             │
+│  ─────────────────────────────────────────────────────────  │
+│  • id: UUID                                                  │
+│  • createdAt: Date                                           │
+│  • gameMode: GameMode (.oneVsOne | .twoVsTwo)               │
+│  • status: GameStatus (.active | .completed)                │
+│  • winningTeam: Int? (1 or 2)                               │
+│  ─────────────────────────────────────────────────────────  │
+│  Relationships:                                              │
+│  • team1: Team ──────────┐                                  │
+│  • team2: Team ──────────┼───┐                              │
+└──────────────────────────┼───┼──────────────────────────────┘
+                           │   │
+                ┌──────────┘   └──────────┐
+                ▼                          ▼
+        ┌───────────────┐          ┌───────────────┐
+        │    Team 1     │          │    Team 2     │
+        │───────────────│          │───────────────│
+        │ player1Name   │          │ player1Name   │
+        │ player2Name?  │          │ player2Name?  │
+        │ scoreHistory  │          │ scoreHistory  │
+        │   [0,5,10,15] │          │   [0,10,25]   │
+        └───────────────┘          └───────────────┘
+```
+
+## State Management & Data Flow
+
+```
+┌──────────────────────────────────────────────────────────┐
+│                    SwiftData Stack                        │
+│                                                           │
+│  ┌────────────────────────────────────────────────┐     │
+│  │         ModelContainer (App-wide)              │     │
+│  │  • Schema: [GameSession, Team]                 │     │
+│  │  • Configuration: CloudKit enabled             │     │
+│  │  • Storage: Persistent + iCloud                │     │
+│  └────────────┬───────────────────────────────────┘     │
+│               │                                          │
+│               ▼                                          │
+│  ┌────────────────────────────────────────────────┐     │
+│  │         ModelContext (Injected)                │     │
+│  │  • Insert new games                            │     │
+│  │  • Delete games                                │     │
+│  │  • Auto-save changes                           │     │
+│  │  • Sync to CloudKit                            │     │
+│  └────────────┬───────────────────────────────────┘     │
+└───────────────┼──────────────────────────────────────────┘
+                │
+                ▼
+┌───────────────────────────────────────────────────────────┐
+│                        Views                              │
+│                                                           │
+│  GameListView:                                            │
+│    @Query(sort: \.createdAt) var games: [GameSession]    │
+│    • Automatically fetches all games                      │
+│    • Updates on data changes                              │
+│                                                           │
+│  CreateGameView:                                          │
+│    @Environment(\.modelContext) var modelContext          │
+│    • Creates new GameSession                              │
+│    • Inserts into context                                 │
+│                                                           │
+│  GameDetailView:                                          │
+│    @Bindable var game: GameSession                        │
+│    • Two-way binding to game                              │
+│    • Updates automatically save                           │
+│    • Changes sync via CloudKit                            │
+└───────────────────────────────────────────────────────────┘
+```
+
+## Scoring Flow
+
+```
+User taps [+10] button on Team 1
+          │
+          ▼
+┌─────────────────────────┐
+│  addScore(10, team1, 1) │
+└────────┬────────────────┘
+         │
+         ▼
+┌─────────────────────────────┐
+│  team1.addScore(10)         │
+│  scoreHistory.append(       │
+│    currentScore + 10)       │
+│  [0,5] → [0,5,15]          │
+└────────┬────────────────────┘
+         │
+         ▼
+    Check if >= 35?
+         │
+    ┌────┴────┐
+    │         │
+   No        Yes
+    │         │
+    │         ▼
+    │    ┌──────────────────┐
+    │    │ game.winningTeam │
+    │    │    = 1           │
+    │    │ game.endGame()   │
+    │    │ Show alert       │
+    │    └──────────────────┘
+    │
+    ▼
+SwiftData auto-saves
+    │
+    ▼
+CloudKit syncs to iCloud
+    │
+    ▼
+Other devices receive update
+```
+
+## Undo Flow
+
+```
+User taps [Undo Last Score]
+          │
+          ▼
+┌──────────────────────────┐
+│  Check canUndo()         │
+│  (scoreHistory.count > 1)│
+└────────┬─────────────────┘
+         │
+    ┌────┴────┐
+    │         │
+   No        Yes
+    │         │
+    │         ▼
+    │    ┌──────────────────────┐
+    │    │ scoreHistory         │
+    │    │   .removeLast()      │
+    │    │ [0,5,15] → [0,5]    │
+    │    └──────┬───────────────┘
+    │           │
+    ▼           ▼
+Button      UI updates with
+disabled    new currentScore
+    │           │
+    └────┬──────┘
+         ▼
+   SwiftData saves
+         │
+         ▼
+   CloudKit syncs
+```
+
+## iPad Layout Adaptation
+
+```
+┌────────────────────────────────────────────────────────┐
+│                iPhone (Compact Width)                   │
+│                                                         │
+│  ┌──────────────────────────────────────────────────┐ │
+│  │              Game Info Card                       │ │
+│  │  Alice & Bob (15) VS Charlie & David (25)        │ │
+│  └──────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────┐ │
+│  │              Team 1 Card                          │ │
+│  │  Score: 15                                        │ │
+│  │  [+5][+10][+15]                                  │ │
+│  │  [+20][+25][+30]                                 │ │
+│  │  [+35]                                            │ │
+│  │  [Undo]                                           │ │
+│  │  History: 0→5→10→15                              │ │
+│  └──────────────────────────────────────────────────┘ │
+│  ┌──────────────────────────────────────────────────┐ │
+│  │              Team 2 Card                          │ │
+│  │  Score: 25                                        │ │
+│  │  [+5][+10][+15]                                  │ │
+│  │  [+20][+25][+30]                                 │ │
+│  │  [+35]                                            │ │
+│  │  [Undo]                                           │ │
+│  │  History: 0→10→25                                │ │
+│  └──────────────────────────────────────────────────┘ │
+│                   (Scrollable)                          │
+└─────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│                 iPad (Regular Width)                        │
+│                                                             │
+│  ┌──────────────────────────────────────────────────────┐  │
+│  │              Game Info Card                           │  │
+│  │  Alice & Bob (15) VS Charlie & David (25)            │  │
+│  └──────────────────────────────────────────────────────┘  │
+│  ┌─────────────────────────┬─────────────────────────────┐ │
+│  │      Team 1 Card        │       Team 2 Card           │ │
+│  │  Score: 15              │  Score: 25                  │ │
+│  │  [+5][+10][+15]         │  [+5][+10][+15]            │ │
+│  │  [+20][+25][+30]        │  [+20][+25][+30]           │ │
+│  │  [+35]                  │  [+35]                      │ │
+│  │  [Undo]                 │  [Undo]                     │ │
+│  │  History: 0→5→10→15    │  History: 0→10→25          │ │
+│  └─────────────────────────┴─────────────────────────────┘ │
+│                   (Side by side)                            │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## CloudKit Sync Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  Device 1 (iPhone)                       │
+│                                                          │
+│  User creates game                                       │
+│       │                                                  │
+│       ▼                                                  │
+│  SwiftData saves locally                                 │
+│       │                                                  │
+│       ▼                                                  │
+│  CloudKit uploads to iCloud                              │
+└────────────┬────────────────────────────────────────────┘
+             │
+             ▼
+      ┌─────────────┐
+      │   iCloud    │ ← Central sync server
+      │  Container  │
+      └─────┬───────┘
+            │
+            ▼
+┌────────────────────────────────────────────────────────┐
+│                  Device 2 (iPad)                        │
+│                                                         │
+│  CloudKit downloads changes                             │
+│       │                                                 │
+│       ▼                                                 │
+│  SwiftData updates local storage                        │
+│       │                                                 │
+│       ▼                                                 │
+│  UI automatically updates via @Query                    │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Component Hierarchy
+
+```
+DotCounterApp
+└── WindowGroup
+    └── GameListView
+        ├── NavigationStack
+        │   ├── List
+        │   │   └── ForEach(games)
+        │   │       └── NavigationLink → GameDetailView
+        │   │           └── GameRowView
+        │   │               ├── StatusBadge
+        │   │               └── Text elements
+        │   └── Toolbar
+        │       ├── EditButton
+        │       └── New Game Button
+        └── Sheet → CreateGameView
+            └── NavigationStack
+                ├── Form
+                │   ├── Picker (game mode)
+                │   ├── Section (Team 1)
+                │   │   └── TextFields
+                │   └── Section (Team 2)
+                │       └── TextFields
+                └── Toolbar
+                    ├── Cancel Button
+                    └── Create Button
+
+GameDetailView
+├── Game Info Card
+│   ├── Mode Badge
+│   ├── Status Badge
+│   ├── Scores (large)
+│   └── Winner Badge (if applicable)
+├── Team Scoring Card (Team 1)
+│   ├── Team Header
+│   ├── Current Score (large)
+│   ├── Score Buttons Grid
+│   │   ├── +5, +10, +15
+│   │   ├── +20, +25, +30
+│   │   └── +35
+│   ├── Undo Button
+│   └── Score History ScrollView
+└── Team Scoring Card (Team 2)
+    └── (Same structure as Team 1)
+```
+
+This diagram shows the complete app architecture, navigation flow, data management, and UI structure!
