@@ -12,6 +12,8 @@ import SwiftData
 final class Team {
     var player1Name: String = ""
     var player2Name: String? // nil for 1v1 mode
+    
+    @Attribute(.externalStorage)
     var scoreHistory: [Int] = [0]
     
     var gameSessionAsTeam1: GameSession?
@@ -50,3 +52,4 @@ final class Team {
         return scoreHistory.count > 1
     }
 }
+
