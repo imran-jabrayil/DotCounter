@@ -10,21 +10,26 @@ import SwiftData
 
 /// The root screen: a list of all games, newest first.
 ///
-/// Each row navigates to ``GameDetailView``. Provides creation (via a
-/// ``CreateGameView`` sheet), swipe/edit deletion, and an empty state. The list
-/// updates reactively through `@Query`, including from CloudKit sync.
+/// Uses a `NavigationSplitView` so iPad shows the game list and the selected
+/// game side-by-side, while iPhone collapses to a pushed stack. Provides
+/// creation (via a ``CreateGameView`` sheet), settings (via a ``SettingsView``
+/// sheet), swipe/edit deletion, and an empty state. On first launch it presents
+/// ``OnboardingView`` until the user has completed it. The list updates
+/// reactively through `@Query`, including from CloudKit sync.
 struct GameListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \GameSession.createdAt, order: .reverse) private var games: [GameSession]
+    @AppStorage(AppStorageKeys.hasCompletedOnboarding) private var hasCompletedOnboarding = false
+
     @State private var showingCreateGame = false
+    @State private var showingSettings = false
+    @State private var selectedGame: GameSession?
 
     var body: some View {
-        NavigationStack {
-            List {
+        NavigationSplitView {
+            List(selection: $selectedGame) {
                 ForEach(games) { game in
-                    NavigationLink {
-                        GameDetailView(game: game)
-                    } label: {
+                    NavigationLink(value: game) {
                         GameRowView(game: game)
                     }
                 }
@@ -40,11 +45,15 @@ struct GameListView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        showingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                }
+                ToolbarItem(placement: .topBarLeading) {
                     EditButton()
                 }
-            }
-            .sheet(isPresented: $showingCreateGame) {
-                CreateGameView()
             }
             .overlay {
                 if games.isEmpty {
@@ -60,14 +69,41 @@ struct GameListView: View {
                     }
                 }
             }
+        } detail: {
+            if let selectedGame {
+                GameDetailView(game: selectedGame)
+            } else {
+                ContentUnavailableView(
+                    "Select a Game",
+                    systemImage: "die.face.5",
+                    description: Text("Choose a game from the list to track its score.")
+                )
+            }
+        }
+        .sheet(isPresented: $showingCreateGame) {
+            CreateGameView()
+        }
+        .sheet(isPresented: $showingSettings) {
+            SettingsView()
+        }
+        .fullScreenCover(isPresented: Binding(
+            get: { !hasCompletedOnboarding },
+            set: { _ in } // Dismissal is driven by OnboardingView setting the flag.
+        )) {
+            OnboardingView()
         }
     }
 
     /// Deletes the games at the given list offsets from the model context.
+    /// Clears the selection if the selected game was removed.
     /// - Parameter offsets: Index set provided by `onDelete`.
     private func deleteGames(at offsets: IndexSet) {
         for index in offsets {
-            modelContext.delete(games[index])
+            let game = games[index]
+            if game == selectedGame {
+                selectedGame = nil
+            }
+            modelContext.delete(game)
         }
     }
 }

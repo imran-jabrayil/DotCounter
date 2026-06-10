@@ -11,11 +11,17 @@ import SwiftData
 /// Modal form for creating a new game.
 ///
 /// Lets the user pick the ``GameMode`` and enter player names for both teams,
-/// then inserts a new ``GameSession`` into the model context. The Create button
-/// is disabled until all required names are filled in.
+/// then inserts a new ``GameSession`` into the model context. The current global
+/// default rules are *snapshotted* onto the new game, so later changes in
+/// ``SettingsView`` never alter this game. The Create button is disabled until
+/// all required names are filled in.
 struct CreateGameView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+
+    // Global default rules, snapshotted onto each new game at creation.
+    @AppStorage(AppStorageKeys.defaultCapotInstantWin) private var defaultCapotInstantWin = true
+    @AppStorage(AppStorageKeys.defaultAutoEndAtTarget) private var defaultAutoEndAtTarget = true
 
     @State private var gameMode: GameMode = .oneVsOne
     @State private var team1Player1 = ""
@@ -71,6 +77,20 @@ struct CreateGameView: View {
                 } header: {
                     Text("Team 2")
                 }
+
+                Section {
+                    Label {
+                        Text(ruleSummary)
+                    } icon: {
+                        Image(systemName: "checkmark.seal")
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                } header: {
+                    Text("Rules")
+                } footer: {
+                    Text("Set the defaults in Settings.")
+                }
             }
             .navigationTitle("New Game")
             .navigationBarTitleDisplayMode(.inline)
@@ -90,8 +110,16 @@ struct CreateGameView: View {
         }
     }
 
-    /// Builds the two teams from the trimmed field values, inserts a new
-    /// ``GameSession``, and dismisses the sheet.
+    /// A short, human-readable summary of the rules this game will use.
+    private var ruleSummary: String {
+        let target = GameSession.defaultTargetScore
+        let capot = defaultCapotInstantWin ? "+35 wins instantly" : "+35 is a normal move"
+        let end = defaultAutoEndAtTarget ? "auto-ends at \(target)" : "ends manually"
+        return "First to \(target) — \(capot); \(end)."
+    }
+
+    /// Builds the two teams from the trimmed field values, snapshots the current
+    /// default rules onto a new ``GameSession``, inserts it, and dismisses.
     private func createGame() {
         let team1 = Team(
             player1Name: team1Player1.trimmingCharacters(in: .whitespaces),
@@ -103,7 +131,13 @@ struct CreateGameView: View {
             player2Name: gameMode == .twoVsTwo ? team2Player2.trimmingCharacters(in: .whitespaces) : nil
         )
 
-        let game = GameSession(gameMode: gameMode, team1: team1, team2: team2)
+        let game = GameSession(
+            gameMode: gameMode,
+            team1: team1,
+            team2: team2,
+            capotInstantWin: defaultCapotInstantWin,
+            autoEndAtTarget: defaultAutoEndAtTarget
+        )
 
         modelContext.insert(game)
         dismiss()
