@@ -6,7 +6,18 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXContainerItemProxy section */
+		F30B0F572FD9C9A800956C9C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = F3C8B1F82F53B6AA00C12D6F /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = F3C8B1FF2F53B6AA00C12D6F;
+			remoteInfo = DotCounter;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		F30B0F532FD9C9A800956C9C /* DotCounterTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = DotCounterTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		F3C8B2002F53B6AA00C12D6F /* DotCounter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DotCounter.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -21,6 +32,11 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		F30B0F542FD9C9A800956C9C /* DotCounterTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = DotCounterTests;
+			sourceTree = "<group>";
+		};
 		F3C8B2022F53B6AA00C12D6F /* DotCounter */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -32,6 +48,13 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		F30B0F502FD9C9A800956C9C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F3C8B1FD2F53B6AA00C12D6F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -46,6 +69,7 @@
 			isa = PBXGroup;
 			children = (
 				F3C8B2022F53B6AA00C12D6F /* DotCounter */,
+				F30B0F542FD9C9A800956C9C /* DotCounterTests */,
 				F3C8B2012F53B6AA00C12D6F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -54,6 +78,7 @@
 			isa = PBXGroup;
 			children = (
 				F3C8B2002F53B6AA00C12D6F /* DotCounter.app */,
+				F30B0F532FD9C9A800956C9C /* DotCounterTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -61,6 +86,29 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		F30B0F522FD9C9A800956C9C /* DotCounterTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F30B0F592FD9C9A800956C9C /* Build configuration list for PBXNativeTarget "DotCounterTests" */;
+			buildPhases = (
+				F30B0F4F2FD9C9A800956C9C /* Sources */,
+				F30B0F502FD9C9A800956C9C /* Frameworks */,
+				F30B0F512FD9C9A800956C9C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				F30B0F582FD9C9A800956C9C /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				F30B0F542FD9C9A800956C9C /* DotCounterTests */,
+			);
+			name = DotCounterTests;
+			packageProductDependencies = (
+			);
+			productName = DotCounterTests;
+			productReference = F30B0F532FD9C9A800956C9C /* DotCounterTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 		F3C8B1FF2F53B6AA00C12D6F /* DotCounter */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = F3C8B20B2F53B6AB00C12D6F /* Build configuration list for PBXNativeTarget "DotCounter" */;
@@ -90,9 +138,13 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
+				LastSwiftUpdateCheck = 2700;
 				LastUpgradeCheck = 2630;
 				TargetAttributes = {
+					F30B0F522FD9C9A800956C9C = {
+						CreatedOnToolsVersion = 27.0;
+						TestTargetID = F3C8B1FF2F53B6AA00C12D6F;
+					};
 					F3C8B1FF2F53B6AA00C12D6F = {
 						CreatedOnToolsVersion = 26.2;
 					};
@@ -113,11 +165,19 @@
 			projectRoot = "";
 			targets = (
 				F3C8B1FF2F53B6AA00C12D6F /* DotCounter */,
+				F30B0F522FD9C9A800956C9C /* DotCounterTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		F30B0F512FD9C9A800956C9C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F3C8B1FE2F53B6AA00C12D6F /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -128,6 +188,13 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		F30B0F4F2FD9C9A800956C9C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		F3C8B1FC2F53B6AA00C12D6F /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -137,7 +204,59 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		F30B0F582FD9C9A800956C9C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = F3C8B1FF2F53B6AA00C12D6F /* DotCounter */;
+			targetProxy = F30B0F572FD9C9A800956C9C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		F30B0F5A2FD9C9A800956C9C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3HB4642984;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jabrayilov.DotCounterTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DotCounter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DotCounter";
+			};
+			name = Debug;
+		};
+		F30B0F5B2FD9C9A800956C9C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3HB4642984;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 27.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.jabrayilov.DotCounterTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/DotCounter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DotCounter";
+			};
+			name = Release;
+		};
 		F3C8B2092F53B6AB00C12D6F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -334,6 +453,15 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		F30B0F592FD9C9A800956C9C /* Build configuration list for PBXNativeTarget "DotCounterTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F30B0F5A2FD9C9A800956C9C /* Debug */,
+				F30B0F5B2FD9C9A800956C9C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		F3C8B1FB2F53B6AA00C12D6F /* Build configuration list for PBXProject "DotCounter" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
