@@ -8,8 +8,14 @@
 import SwiftUI
 import SwiftData
 
+/// The app entry point.
+///
+/// Builds the shared SwiftData ``ModelContainer`` (backed by CloudKit) and
+/// presents ``GameListView`` as the root scene.
 @main
 struct DotCounterApp: App {
+    /// The app-wide SwiftData container holding ``GameSession`` and ``Team``,
+    /// synced automatically via CloudKit.
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             GameSession.self,
