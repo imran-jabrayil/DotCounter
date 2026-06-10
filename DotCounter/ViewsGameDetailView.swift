@@ -13,8 +13,6 @@ struct GameDetailView: View {
     @Bindable var game: GameSession
     @State private var showingEndGameAlert = false
     @State private var showingWinnerAlert = false
-    @State private var winningTeamNumber: Int?
-    @State private var wasAutoCompleted = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
     var body: some View {
@@ -44,9 +42,9 @@ struct GameDetailView: View {
                             .foregroundStyle(.red)
                             .font(.title3)
                     }
-                } else if wasAutoCompleted {
+                } else if game.canReopen {
                     Button {
-                        uncompleteGame()
+                        game.reopen()
                     } label: {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.uturn.backward.circle.fill")
@@ -69,8 +67,8 @@ struct GameDetailView: View {
         .alert("Winner!", isPresented: $showingWinnerAlert) {
             Button("OK") { }
         } message: {
-            if let winner = winningTeamNumber, let team1 = game.team1, let team2 = game.team2 {
-                Text("\(winner == 1 ? team1.displayName : team2.displayName) wins with 35+ points!")
+            if let winner = game.winner {
+                Text("\(winner.displayName) wins!")
             }
         }
     }
@@ -154,34 +152,18 @@ struct GameDetailView: View {
     
     private func addScore(_ points: Int, to team: Team, teamNumber: Int) {
         team.addScore(points)
-        
-        // Only auto-complete if +35 button was clicked
-        if points == 35 {
-            winningTeamNumber = teamNumber
-            game.winningTeam = teamNumber
-            game.endGame()
-            wasAutoCompleted = true
+
+        // The +35 button is an intentional "capot" instant win: it ends the
+        // game for the team that pressed it. Reaching the winning score via
+        // smaller increments does not auto-win.
+        if points == GameSession.winningScore {
+            game.recordInstantWin(for: teamNumber)
             showingWinnerAlert = true
         }
     }
-    
+
     private func endGame() {
         game.endGame()
-        wasAutoCompleted = false
-    }
-    
-    private func uncompleteGame() {
-        // Reactivate the game
-        game.status = .active
-        game.winningTeam = nil
-        wasAutoCompleted = false
-        
-        // Remove the last score (which was 35) from the winning team
-        if let winner = winningTeamNumber {
-            let team = winner == 1 ? game.team1 : game.team2
-            team?.undoLastScore()
-        }
-        winningTeamNumber = nil
     }
 }
 
@@ -387,14 +369,15 @@ struct CompactTeamSection: View {
                         }
                         .padding(.horizontal)
                     }
-                    .onChange(of: team.scoreHistory.count) { oldValue, newValue in
-                        // Scroll to the last item when count changes
-                        if newValue > 0 {
-                            // Small delay ensures animation works properly for both add and undo
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    proxy.scrollTo(newValue - 1, anchor: .trailing)
-                                }
+                    .onChange(of: team.scoreHistory.count) { _, newValue in
+                        // Scroll to the last item when the count changes. A short
+                        // delay lets the new item lay out so the animation lands on
+                        // it for both add and undo.
+                        guard newValue > 0 else { return }
+                        Task {
+                            try? await Task.sleep(for: .seconds(0.3))
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                proxy.scrollTo(newValue - 1, anchor: .trailing)
                             }
                         }
                     }
@@ -411,12 +394,6 @@ struct CompactTeamSection: View {
                 .frame(height: 12)
         }
         .background(Color(.secondarySystemGroupedBackground))
-    }
-}
-
-extension Array {
-    subscript(safe index: Index) -> Element? {
-        indices.contains(index) ? self[index] : nil
     }
 }
 

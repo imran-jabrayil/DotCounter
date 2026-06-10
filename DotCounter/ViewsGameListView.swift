@@ -12,8 +12,7 @@ struct GameListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \GameSession.createdAt, order: .reverse) private var games: [GameSession]
     @State private var showingCreateGame = false
-    @State private var isRefreshing = false
-    
+
     var body: some View {
         NavigationStack {
             List {
@@ -25,9 +24,6 @@ struct GameListView: View {
                     }
                 }
                 .onDelete(perform: deleteGames)
-            }
-            .refreshable {
-                await refreshData()
             }
             .navigationTitle("Domino Games")
             .toolbar {
@@ -66,14 +62,6 @@ struct GameListView: View {
         for index in offsets {
             modelContext.delete(games[index])
         }
-    }
-    
-    private func refreshData() async {
-        // Add a small delay for visual feedback
-        try? await Task.sleep(for: .seconds(0.5))
-        
-        // SwiftData with CloudKit will automatically sync when the view refreshes
-        // The @Query will automatically update when new data is available
     }
 }
 

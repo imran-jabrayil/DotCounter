@@ -13,20 +13,19 @@ final class Team {
     var player1Name: String = ""
     var player2Name: String? // nil for 1v1 mode
     
-    @Attribute(.externalStorage)
+    // Cumulative score after each round, starting at 0. Stored inline — the
+    // array is small, so external storage (meant for large blobs) is not used.
     var scoreHistory: [Int] = [0]
-    
+
     var gameSessionAsTeam1: GameSession?
     var gameSessionAsTeam2: GameSession?
-    
+
     init(player1Name: String, player2Name: String? = nil) {
         self.player1Name = player1Name
         self.player2Name = player2Name
         self.scoreHistory = [0] // Start with 0
     }
-    
 
-    
     var currentScore: Int {
         scoreHistory.last ?? 0
     }

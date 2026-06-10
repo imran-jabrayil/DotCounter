@@ -27,10 +27,12 @@ A native iOS app built with SwiftUI for tracking scores in Domino games with sup
 
 4. **Scoring System**
    - Quick-add buttons for: +5, +10, +15, +20, +25, +30, +35
-   - Automatic win detection when reaching 35+ points
+   - The +35 button is an instant "capot" win: it ends the game for the team
+     that pressed it. Smaller increments add points without auto-ending the game.
    - Visual feedback for winning team
-   - Green highlight for the +35 button
+   - Green highlight for the +35 (instant-win) button
    - Real-time score updates
+   - An accidental instant win can be undone from the game screen
 
 5. **Score History & Undo**
    - Complete score history tracking from 0 to current
@@ -108,7 +110,8 @@ To test iCloud synchronization:
 1. Select a game from the list
 2. Tap the point buttons (+5, +10, etc.) to add scores
 3. The current score updates immediately
-4. When a team reaches 35+, the game automatically ends with a winner
+4. Tap +35 to record an instant "capot" win — the game ends and that team wins.
+   If pressed by mistake, tap "Undo" in the toolbar to reopen the game.
 
 ### Undoing Scores
 
