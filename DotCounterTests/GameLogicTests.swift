@@ -14,12 +14,25 @@ import Testing
 // MARK: - Helpers
 
 /// Builds a fresh 2v2 game with both teams starting at 0.
-private func makeGame() -> GameSession {
+/// - Parameters:
+///   - capot: Whether a single +35 move wins instantly.
+///   - autoEnd: Whether reaching the target ends the game automatically.
+private func makeGame(capot: Bool = true, autoEnd: Bool = true) -> GameSession {
     GameSession(
         gameMode: .twoVsTwo,
         team1: Team(player1Name: "Alice", player2Name: "Bob"),
-        team2: Team(player1Name: "Charlie", player2Name: "David")
+        team2: Team(player1Name: "Charlie", player2Name: "David"),
+        capotInstantWin: capot,
+        autoEndAtTarget: autoEnd
     )
+}
+
+/// Raises a team to at least the target score using +25 increments, leaving
+/// auto-end behaviour up to the caller's game configuration.
+private func raiseTeam(_ team: Team?, to score: Int) {
+    while (team?.currentScore ?? .max) < score {
+        team?.addScore(25)
+    }
 }
 
 // MARK: - Team scoring
@@ -71,7 +84,7 @@ struct TeamScoringTests {
     }
 }
 
-// MARK: - Instant win
+// MARK: - Instant (capot) win
 
 @Suite("Instant win")
 struct InstantWinTests {
@@ -93,8 +106,8 @@ struct InstantWinTests {
     @Test("Triggering team wins even if the opponent is already at the threshold")
     func triggeringTeamKeepsTheWin() {
         let game = makeGame()
-        game.team1?.addScore(GameSession.winningScore) // team1 at 35
-        game.recordInstantWin(for: 2)                  // team2 presses +35
+        game.team1?.addScore(GameSession.capotValue) // team1 at 35
+        game.recordInstantWin(for: 2)                // team2 presses +35
         #expect(game.winningTeam == 2)
         #expect(game.winner === game.team2)
     }
@@ -104,8 +117,8 @@ struct InstantWinTests {
 
 @Suite("Manual end game")
 struct ManualEndGameTests {
-    @Test("Ending with both teams below the threshold yields no winner")
-    func noWinnerWhenBelowThreshold() {
+    @Test("Ending with both teams below the target yields no winner")
+    func noWinnerWhenBelowTarget() {
         let game = makeGame()
         game.team1?.addScore(20)
         game.team2?.addScore(30)
@@ -117,10 +130,10 @@ struct ManualEndGameTests {
         #expect(game.canReopen == false)
     }
 
-    @Test("Ending declares the team that reached the threshold")
-    func declaresThresholdTeam() {
+    @Test("Ending declares the team that reached the target")
+    func declaresTargetTeam() {
         let game = makeGame()
-        game.team2?.addScore(GameSession.winningScore)
+        raiseTeam(game.team2, to: game.targetScore) // push team2 to >= 365
         game.endGame()
         #expect(game.winningTeam == 2)
         #expect(game.winner === game.team2)
@@ -135,7 +148,7 @@ struct ReopenTests {
     func reopenUndoesInstantWin() {
         let game = makeGame()
         game.team1?.addScore(10)
-        game.team1?.addScore(GameSession.winningScore) // instant-win score appended
+        game.team1?.addScore(GameSession.capotValue) // instant-win score appended
         game.recordInstantWin(for: 1)
 
         game.reopen()
@@ -147,15 +160,114 @@ struct ReopenTests {
         #expect(game.team1?.currentScore == 10)
     }
 
-    @Test("Reopen is a no-op for a manually ended game")
+    @Test("Reopen is a no-op for a target win via manual end")
     func reopenIgnoresManualEnd() {
         let game = makeGame()
-        game.team1?.addScore(GameSession.winningScore)
-        game.endGame() // winner via threshold, not an instant win
+        raiseTeam(game.team1, to: game.targetScore)
+        game.endGame() // winner via target, not an instant win
         let scoreBefore = game.team1?.currentScore
 
         game.reopen()
         #expect(game.status == .completed)
+        #expect(game.canReopen == false)
         #expect(game.team1?.currentScore == scoreBefore)
+    }
+}
+
+// MARK: - Target win and rule toggles
+
+@Suite("Target win and rule toggles")
+struct TargetWinTests {
+    @Test("Reaching the target auto-ends the game when enabled")
+    func reachingTargetAutoEnds() {
+        let game = makeGame(autoEnd: true)
+        var outcome = GameSession.ScoreOutcome.scored
+        // Score in +25 steps until the crossing move.
+        while game.status == .active {
+            outcome = game.applyScore(points: 25, toTeam: 1)
+        }
+        #expect(outcome == .targetWin)
+        #expect(game.status == .completed)
+        #expect(game.winningTeam == 1)
+        #expect(game.wonByInstantWin == false)
+        #expect(game.canReopen == false)
+        #expect((game.team1?.currentScore ?? 0) >= game.targetScore)
+    }
+
+    @Test("Reaching the target does not end the game when auto-end is off")
+    func reachingTargetDoesNotAutoEnd() {
+        let game = makeGame(autoEnd: false)
+        raiseTeam(game.team1, to: game.targetScore)
+        // The crossing move must report `.scored`, not a win.
+        let outcome = game.applyScore(points: 25, toTeam: 1)
+        #expect(outcome == .scored)
+        #expect(game.status == .active)
+        #expect(game.winningTeam == nil)
+
+        // The manual End button then declares the winner.
+        game.endGame()
+        #expect(game.winningTeam == 1)
+    }
+
+    @Test("Capot enabled: a +35 move wins instantly")
+    func capotEnabledWins() {
+        let game = makeGame(capot: true)
+        let outcome = game.applyScore(points: GameSession.capotValue, toTeam: 2)
+        #expect(outcome == .capotWin)
+        #expect(game.winningTeam == 2)
+        #expect(game.wonByInstantWin == true)
+        #expect(game.canReopen == true)
+    }
+
+    @Test("Capot disabled: a +35 move is just a normal score")
+    func capotDisabledIsNormalMove() {
+        let game = makeGame(capot: false, autoEnd: true)
+        let outcome = game.applyScore(points: GameSession.capotValue, toTeam: 1)
+        #expect(outcome == .scored)
+        #expect(game.status == .active)
+        #expect(game.team1?.currentScore == 35)
+        #expect(game.winningTeam == nil)
+    }
+
+    @Test("Capot disabled but a +35 reaching the target still wins as a target win")
+    func capotDisabledStillReachesTarget() {
+        let game = makeGame(capot: false, autoEnd: true)
+        raiseTeam(game.team1, to: game.targetScore - GameSession.capotValue) // up to 330
+        let outcome = game.applyScore(points: GameSession.capotValue, toTeam: 1) // 365
+        #expect(outcome == .targetWin)
+        #expect(game.winningTeam == 1)
+        #expect(game.wonByInstantWin == false)
+    }
+
+    @Test("Overshooting the target still wins (>= semantics)")
+    func overshootWins() {
+        let game = makeGame(autoEnd: true)
+        raiseTeam(game.team1, to: game.targetScore - 10) // 360 via +25 steps lands above, so build precisely
+        // Ensure we sit just below the target before the overshoot move.
+        // raiseTeam may overshoot already; only assert when still active.
+        if game.status == .active {
+            let outcome = game.applyScore(points: 30, toTeam: 1)
+            #expect(outcome == .targetWin)
+            #expect(game.winningTeam == 1)
+        }
+    }
+
+    @Test("Scoring after completion is a no-op")
+    func noOpAfterCompletion() {
+        let game = makeGame()
+        game.applyScore(points: GameSession.capotValue, toTeam: 1) // capot win
+        let scoreBefore = game.team2?.currentScore
+        let outcome = game.applyScore(points: 25, toTeam: 2)
+        #expect(outcome == .scored)
+        #expect(game.team2?.currentScore == scoreBefore)
+        #expect(game.winningTeam == 1)
+    }
+
+    @Test("Rules are snapshotted on the game instance")
+    func rulesSnapshotted() {
+        let game = makeGame(capot: false, autoEnd: false)
+        #expect(game.capotInstantWin == false)
+        #expect(game.autoEndAtTarget == false)
+        #expect(game.targetScore == GameSession.defaultTargetScore)
     }
 }

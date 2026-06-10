@@ -10,9 +10,10 @@ import SwiftUI
 /// The scoring controls for a single team within ``GameDetailView``.
 ///
 /// Renders the team header with an inline undo button, a grid of quick-add
-/// score buttons (the +35 button is the green "capot" instant win), and a
-/// horizontally scrolling score-history timeline that auto-scrolls to the
-/// latest entry. Designed to fit on screen without vertical scrolling.
+/// score buttons (the +35 button is highlighted as the green "capot" instant
+/// win only when that rule is enabled), and a horizontally scrolling
+/// score-history timeline that auto-scrolls to the latest entry. Designed to
+/// fit on screen without vertical scrolling.
 struct CompactTeamSection: View {
     /// The team whose score is shown and edited.
     let team: Team
@@ -20,13 +21,21 @@ struct CompactTeamSection: View {
     let teamNumber: Int
     /// Whether scoring controls are enabled (only while the game is active).
     let isActive: Bool
+    /// Whether the +35 "capot" instant-win rule is in force for this game.
+    /// When `false`, the +35 button looks and behaves like any other score.
+    let capotEnabled: Bool
     /// Called with the chosen point value when a score button is tapped.
     let onAddScore: (Int) -> Void
     /// Called when the inline undo button is tapped.
     let onUndo: () -> Void
 
-    /// The quick-add point values offered as buttons. `35` is the instant win.
+    /// The quick-add point values offered as buttons. `35` is the capot move.
     let scoreOptions = [5, 10, 15, 20, 25, 30, 35]
+
+    /// Whether the given score button is the highlighted capot instant-win.
+    private func isCapotButton(_ score: Int) -> Bool {
+        capotEnabled && score == GameSession.capotValue
+    }
 
     var body: some View {
         VStack(spacing: 12) {
@@ -74,7 +83,7 @@ struct CompactTeamSection: View {
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 12)
-                                .background(score == GameSession.winningScore ? Color.green : Color.blue)
+                                .background(isCapotButton(score) ? Color.green : Color.blue)
                                 .foregroundStyle(.white)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                         }
@@ -138,6 +147,7 @@ struct CompactTeamSection: View {
         team: Team(player1Name: "Alice", player2Name: "Bob"),
         teamNumber: 1,
         isActive: true,
+        capotEnabled: true,
         onAddScore: { _ in },
         onUndo: { }
     )

@@ -14,12 +14,22 @@ import SwiftData
 /// (compact) and a side-by-side layout on iPad (regular). Hosts the score
 /// controls (``CompactTeamSection``), the score header/card, and the toolbar
 /// actions for ending or reopening a game.
+///
+/// All scoring and win detection is delegated to ``GameSession/applyScore(points:toTeam:)``;
+/// this view only reacts to the returned ``GameSession/ScoreOutcome`` to present
+/// the winner alert, a confetti celebration, and haptic feedback.
 struct GameDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Bindable var game: GameSession
     @State private var showingEndGameAlert = false
     @State private var showingWinnerAlert = false
+    @State private var showCelebration = false
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+
+    // Haptic triggers. Each is bumped to fire its associated sensory feedback.
+    @State private var scoreFeedback = 0
+    @State private var undoFeedback = 0
+    @State private var winFeedback = 0
 
     var body: some View {
         Group {
@@ -38,6 +48,13 @@ struct GameDetailView: View {
         }
         .navigationTitle("Domino Score")
         .navigationBarTitleDisplayMode(.inline)
+        .overlay {
+            if showCelebration {
+                ConfettiView()
+                    .ignoresSafeArea()
+                    .transition(.opacity)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 if game.status == .active {
@@ -77,6 +94,9 @@ struct GameDetailView: View {
                 Text("\(winner.displayName) wins!")
             }
         }
+        .sensoryFeedback(.impact(weight: .light), trigger: scoreFeedback)
+        .sensoryFeedback(.impact(flexibility: .soft), trigger: undoFeedback)
+        .sensoryFeedback(.success, trigger: winFeedback)
     }
 
     /// Stacked layout used on iPhone: compact header above the two team sections.
@@ -98,11 +118,12 @@ struct GameDetailView: View {
                     team: team1,
                     teamNumber: 1,
                     isActive: game.status == .active,
+                    capotEnabled: game.capotInstantWin,
                     onAddScore: { points in
-                        addScore(points, to: team1, teamNumber: 1)
+                        addScore(points, toTeam: 1)
                     },
                     onUndo: {
-                        team1.undoLastScore()
+                        undo(team1)
                     }
                 )
 
@@ -112,11 +133,12 @@ struct GameDetailView: View {
                     team: team2,
                     teamNumber: 2,
                     isActive: game.status == .active,
+                    capotEnabled: game.capotInstantWin,
                     onAddScore: { points in
-                        addScore(points, to: team2, teamNumber: 2)
+                        addScore(points, toTeam: 2)
                     },
                     onUndo: {
-                        team2.undoLastScore()
+                        undo(team2)
                     }
                 )
             }
@@ -138,11 +160,12 @@ struct GameDetailView: View {
                     team: team1,
                     teamNumber: 1,
                     isActive: game.status == .active,
+                    capotEnabled: game.capotInstantWin,
                     onAddScore: { points in
-                        addScore(points, to: team1, teamNumber: 1)
+                        addScore(points, toTeam: 1)
                     },
                     onUndo: {
-                        team1.undoLastScore()
+                        undo(team1)
                     }
                 )
 
@@ -152,11 +175,12 @@ struct GameDetailView: View {
                     team: team2,
                     teamNumber: 2,
                     isActive: game.status == .active,
+                    capotEnabled: game.capotInstantWin,
                     onAddScore: { points in
-                        addScore(points, to: team2, teamNumber: 2)
+                        addScore(points, toTeam: 2)
                     },
                     onUndo: {
-                        team2.undoLastScore()
+                        undo(team2)
                     }
                 )
             }
@@ -164,29 +188,52 @@ struct GameDetailView: View {
         }
     }
 
-    /// Adds points to a team and triggers an instant win when the +35 button is used.
+    /// Adds points to a team via the model and reacts to the resulting outcome.
     ///
-    /// The +35 button is an intentional "capot" instant win: it ends the game
-    /// for the team that pressed it. Reaching the winning score via smaller
-    /// increments does not auto-win.
+    /// The model applies the game's rules (capot instant win, auto-end at the
+    /// target); this view only presents the winner alert + celebration and fires
+    /// haptics based on what happened.
     ///
     /// - Parameters:
     ///   - points: The points to add.
-    ///   - team: The team receiving the points.
     ///   - teamNumber: The team's side, `1` or `2`.
-    private func addScore(_ points: Int, to team: Team, teamNumber: Int) {
-        team.addScore(points)
-
-        if points == GameSession.winningScore {
-            game.recordInstantWin(for: teamNumber)
+    private func addScore(_ points: Int, toTeam teamNumber: Int) {
+        let outcome = game.applyScore(points: points, toTeam: teamNumber)
+        switch outcome {
+        case .scored:
+            scoreFeedback += 1
+        case .capotWin, .targetWin:
+            winFeedback += 1
             showingWinnerAlert = true
+            withAnimation { showCelebration = true }
+            // Remove the confetti after it has fallen.
+            Task {
+                try? await Task.sleep(for: .seconds(2.5))
+                withAnimation { showCelebration = false }
+            }
         }
     }
 
+    /// Undoes the last score for a team and fires a soft haptic.
+    /// - Parameter team: The team whose last score should be reverted.
+    private func undo(_ team: Team) {
+        guard team.canUndo() else { return }
+        team.undoLastScore()
+        undoFeedback += 1
+    }
+
     /// Ends the game manually (declaring a winner only if one already reached the
-    /// winning score). See ``GameSession/endGame()``.
+    /// target score). See ``GameSession/endGame()``.
     private func endGame() {
         game.endGame()
+        if game.winner != nil {
+            winFeedback += 1
+            withAnimation { showCelebration = true }
+            Task {
+                try? await Task.sleep(for: .seconds(2.5))
+                withAnimation { showCelebration = false }
+            }
+        }
     }
 }
 
